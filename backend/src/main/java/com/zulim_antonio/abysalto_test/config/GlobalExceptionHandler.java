@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,14 @@ public class GlobalExceptionHandler {
         String message = "Product service is currently unavailable, please try again later";
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
             .body(new ErrorResponse("EXTERNAL_SERVICE_UNAVAILABLE", message));
+    }
+
+    @ExceptionHandler(HttpClientErrorException.NotFound.class)
+    public ResponseEntity<ErrorResponse> handleProductNotFound(HttpClientErrorException.NotFound ex, HttpServletRequest request) {
+        log.warn("Resource not found while handling request to {}", request.getRequestURL().toString());
+        String message = "The requested product does not exist";
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse("PRODUCT_NOT_FOUND", message));
     }
 
     @ExceptionHandler(Exception.class)

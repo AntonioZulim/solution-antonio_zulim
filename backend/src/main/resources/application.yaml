@@ -1,3 +1,7 @@
 spring:
   application:
     name: abysalto_test
+springdoc:
+  swagger-ui:
+    filter: false
+    layout: BaseLayout
