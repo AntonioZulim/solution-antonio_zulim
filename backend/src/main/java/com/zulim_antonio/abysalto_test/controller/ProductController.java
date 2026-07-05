@@ -1,13 +1,19 @@
 package com.zulim_antonio.abysalto_test.controller;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.zulim_antonio.abysalto_test.dto.ErrorResponse;
 import com.zulim_antonio.abysalto_test.dto.ProductDto;
-import com.zulim_antonio.abysalto_test.dto.ProductListDto;
+import com.zulim_antonio.abysalto_test.dto.ProductSummaryDto;
 import com.zulim_antonio.abysalto_test.service.ProductService;
 
 @RestController
@@ -18,24 +24,27 @@ public class ProductController {
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
-
-    @GetMapping
-    public ProductListDto getProductList() {
-        return productService.getProductList();
-    }
     
     @GetMapping("/{id}")
     public ProductDto getProductById(@PathVariable Long id) {
         return productService.getProductById(id);
     }
 
-    @GetMapping(params = {"category", "price"})
-    public String getProductByCatAndPrice(@RequestParam(name = "category") String category, @RequestParam(name = "price") Double price) {
-        return "filter cat=" + category.toString() + ", price=" + price.toString();
+    @GetMapping
+    public ResponseEntity<?> getProducts(
+        @RequestParam(required = false) String category,
+        @RequestParam(required = false) Double minPrice,
+        @RequestParam(required = false) Double maxPrice) {
+            Optional<List<ProductSummaryDto>> res = productService.getProducts(category, minPrice, maxPrice);
+            if(!res.isPresent()){
+                String message = "Category " + category + " does not exist";
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("CATEGORY_NOT_FOUND", message));
+            }
+            return ResponseEntity.ok(res.get());
     }
 
     @GetMapping("/search")
-    public String getProductByName(@RequestParam(name = "name") String name) {
-        return "filter name=" + name.toString();
+    public List<ProductSummaryDto> getProductByName(@RequestParam String name) {
+        return productService.searchProducts(name);
     }
 }
