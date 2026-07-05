@@ -6,6 +6,8 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.zulim_antonio.abysalto_test.client.ProductClient;
 import com.zulim_antonio.abysalto_test.dto.CategoryDto;
@@ -14,6 +16,7 @@ import com.zulim_antonio.abysalto_test.dto.ProductSummaryDto;
 
 @Service
 public class ProductService {
+    private static final Logger log = LoggerFactory.getLogger(ProductService.class);
     private final ProductClient productClient;
 
     public ProductService(ProductClient productClient) {
@@ -25,10 +28,13 @@ public class ProductService {
     }
 
     public Optional<List<ProductSummaryDto>> getProducts(String category, Double minPrice, Double maxPrice){
+        log.info("Fetching products with filters - category: {}, minPrice: {}, maxPrice: {}", category, minPrice, maxPrice);
+
         Stream<ProductDto> prods;
         if(category!=null){
             Optional<CategoryDto> foundCategory = productClient.getCategories().stream().filter(c -> c.slug().equals(category)).findFirst();
             if(!foundCategory.isPresent()){
+                log.warn("Category '{}' not found", category);
                 return Optional.empty();
             }
             prods = productClient.getProductsByAbsoluteUrl(URI.create(foundCategory.get().url())).products().stream();
@@ -44,7 +50,9 @@ public class ProductService {
             prods = prods.filter(p -> p.price()<=maxPrice);
         }
         
-        return Optional.of(prods.map(p -> new ProductSummaryDto(p.thumbnail(), p.title(), p.price(), shorten(p.description()))).toList());
+        List<ProductSummaryDto> res = prods.map(p -> new ProductSummaryDto(p.thumbnail(), p.title(), p.price(), shorten(p.description()))).toList();
+        log.info("Fetched {} products", res.size());
+        return Optional.of(res);
     }
 
     public List<ProductSummaryDto> searchProducts(String name){
