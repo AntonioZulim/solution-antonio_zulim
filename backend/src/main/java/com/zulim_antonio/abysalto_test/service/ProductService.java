@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +23,13 @@ public class ProductService {
     public ProductService(ProductClient productClient) {
         this.productClient = productClient;
     }
-    
+   
+    @Cacheable(value = "products", key = "#id")
     public ProductDto getProductById(Long id){
         return productClient.getProduct(id);
     }
 
+    @Cacheable(value = "products", key = "#category + '-' + #minPrice + '-' + #maxPrice", unless = "#result == null || #result.isEmpty()")
     public Optional<List<ProductSummaryDto>> getProducts(String category, Double minPrice, Double maxPrice){
         log.info("Fetching products with filters - category: {}, minPrice: {}, maxPrice: {}", category, minPrice, maxPrice);
 
@@ -55,6 +58,7 @@ public class ProductService {
         return Optional.of(res);
     }
 
+    @Cacheable(value = "products", key = "#name")
     public List<ProductSummaryDto> searchProducts(String name){
         return productClient.getAllProducts()
                             .products()
